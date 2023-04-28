@@ -436,8 +436,14 @@ public class AsmBackedClassGenerator extends AbstractClassGenerator {
         private static final Type INSTRUMENTED_EXECUTION_ACCESS_TYPE = getType("Lorg/gradle/internal/classpath/InstrumentedExecutionAccess;");
 
         // This set is unlikely will be changing oftenly, so instead of introducing additional level of indirection
-        // we are storing it here despite it's CC-related logic
-        private static final Set<Class<?>> DISALLOWED_AT_EXECUTION_INJECTED_SERVICES_CLASSES = ImmutableSet.of(Project.class, Gradle.class);
+        // we are storing it here despite it's CC-related logic.
+        // Full prohibited hierarchy stored since there is no way to efficiently check hierarchy of `org.objectweb.asm.Type`
+        private static final Set<Type> DISALLOWED_AT_EXECUTION_INJECTED_SERVICES_TYPES = ImmutableSet.of(
+            getType(Project.class),
+            getType("Lorg/gradle/api/internal/project/ProjectInternal;"),
+            getType(Gradle.class),
+            getType("Lorg/gradle/api/internal/GradleInternal;")
+        );
         private static final Type JAVA_LANG_REFLECT_TYPE = getType(java.lang.reflect.Type.class);
         private static final Type OBJECT_TYPE = getType(Object.class);
         private static final Type CLASS_TYPE = getType(Class.class);
@@ -1168,7 +1174,7 @@ public class AsmBackedClassGenerator extends AbstractClassGenerator {
         }
 
         private BytecodeFragment getInjectedServiceGetterEpilogue(Type serviceType, String getterName) {
-            if (isServiceTypeDisallowedAtExecution(serviceType)) {
+            if (DISALLOWED_AT_EXECUTION_INJECTED_SERVICES_TYPES.contains(serviceType)) {
                 return methodVisitor -> new LocalMethodVisitorScope(methodVisitor) {{
                     // InstrumentedExecutionAccess.disallowedAtExecutionInjectedServiceAccessed(<service-type>,<getter-name>,<this-type-name>)
                     _LDC(serviceType);
@@ -1179,20 +1185,6 @@ public class AsmBackedClassGenerator extends AbstractClassGenerator {
             } else {
                 return BytecodeFragment.NO_OP;
             }
-        }
-
-        private boolean isServiceTypeDisallowedAtExecution(Type serviceType) {
-            Class<?> serviceClass;
-
-            try {
-                serviceClass = Class.forName(serviceType.getClassName());
-            } catch (ClassNotFoundException exception) {
-                return false;
-            }
-
-            return DISALLOWED_AT_EXECUTION_INJECTED_SERVICES_CLASSES
-                .stream()
-                .anyMatch(disallowedServiceClass -> disallowedServiceClass.isAssignableFrom(serviceClass));
         }
 
         @Override
