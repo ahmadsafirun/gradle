@@ -16,8 +16,9 @@
 
 package org.gradle.integtests.resolve.versions
 
+import org.gradle.integtests.fixtures.GradleMetadataResolveRunner
+import org.gradle.integtests.fixtures.RequiredFeature
 import org.gradle.integtests.fixtures.executer.GradleContextualExecuter
-import org.gradle.resolve.scenarios.VersionRangeResolveTestScenarios
 import spock.lang.IgnoreIf
 
 @IgnoreIf({
@@ -26,17 +27,6 @@ import spock.lang.IgnoreIf
     // embedded mode
     !GradleContextualExecuter.embedded
 })
-class VersionRangeResolvePairIntegrationTest extends AbstractVersionRangeResolveIntegrationTest {
-    def "resolve pair #permutation"() {
-        given:
-        def candidates = permutation.candidates
-        def expectedSingle = permutation.expectedSingle
-        def expectedMulti = permutation.expectedMulti
-
-        expect:
-        checkScenarioResolution(expectedSingle, expectedMulti, candidates)
-
-        where:
-        permutation << VersionRangeResolveTestScenarios.SCENARIOS_TWO_DEPENDENCIES
-    }
+@RequiredFeature(feature = GradleMetadataResolveRunner.REPOSITORY_TYPE, value = "maven")
+class MavenVersionRangeResolvePairIntegrationTest extends AbstractVersionRangeResolvePairIntegrationTest {
 }
