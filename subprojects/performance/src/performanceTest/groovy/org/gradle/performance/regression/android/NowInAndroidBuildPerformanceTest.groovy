@@ -41,6 +41,7 @@ class NowInAndroidBuildPerformanceTest extends AbstractCrossVersionPerformanceTe
         testProject.configure(runner)
         runner.tasksToRun = tasks.split(' ')
         runner.warmUpRuns = warmUpRuns
+        runner.args = "--max-workers 8"
         runner.runs = runs
         applyEnterprisePlugin()
 
