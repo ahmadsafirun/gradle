@@ -20,6 +20,7 @@ dependencies {
     api(projects.native)
     api(libs.jsr305)
 
+    implementation(projects.classloaders)
     implementation(projects.concurrent)
     implementation(projects.enterpriseLogging)
     implementation(projects.serviceProvider)
@@ -28,7 +29,4 @@ dependencies {
     implementation(libs.slf4jApi)
 
     testImplementation(testFixtures(projects.core))
-}
-tasks.isolatedProjectsIntegTest {
-    enabled = false
 }

@@ -17,6 +17,7 @@
 package org.gradle.process.internal.worker.request;
 
 import org.gradle.api.Action;
+import org.gradle.api.internal.initialization.loadercache.ModelClassLoaderFactory;
 import org.gradle.api.internal.tasks.properties.annotations.OutputPropertyRoleAnnotationHandler;
 import org.gradle.api.problems.internal.DefaultProblems;
 import org.gradle.api.problems.internal.ExceptionProblemRegistry;
@@ -39,7 +40,12 @@ import org.gradle.process.internal.worker.RequestHandler;
 import org.gradle.process.internal.worker.WorkerProcessContext;
 import org.gradle.process.internal.worker.child.WorkerLogEventListener;
 import org.gradle.process.internal.worker.problem.WorkerProblemEmitter;
+import org.gradle.tooling.internal.provider.serialization.ClassLoaderCache;
+import org.gradle.tooling.internal.provider.serialization.DefaultPayloadClassLoaderRegistry;
+import org.gradle.tooling.internal.provider.serialization.PayloadSerializer;
+import org.gradle.tooling.internal.provider.serialization.WellKnownClassLoaderRegistry;
 
+import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.concurrent.Callable;
@@ -59,6 +65,16 @@ public class WorkerAction implements Action<WorkerProcessContext>, Serializable,
 
     public WorkerAction(Class<?> workerImplementation) {
         this.workerImplementationName = workerImplementation.getName();
+    }
+
+    @Nonnull
+    private static PayloadSerializer createPayloadSerializer() {
+        ClassLoaderCache classLoaderCache = new ClassLoaderCache();
+        return new PayloadSerializer(
+            new WellKnownClassLoaderRegistry(
+                new DefaultPayloadClassLoaderRegistry(
+                    classLoaderCache,
+                    new ModelClassLoaderFactory())));
     }
 
     @Override
@@ -89,8 +105,9 @@ public class WorkerAction implements Action<WorkerProcessContext>, Serializable,
                         null,
                         CurrentBuildOperationRef.instance(),
                         new ExceptionProblemRegistry(),
-                        null
-                    ));
+                        null,
+                        instantiatorFactory.decorateLenient(),
+                        createPayloadSerializer()));
                 })
                 .build();
             Class<?> workerImplementation = Class.forName(workerImplementationName);
